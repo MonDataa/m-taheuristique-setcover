@@ -13,8 +13,15 @@ class MetaheuristicSolver {
 public:
     void run() {
         int m, n;
-        string filename = "C:/Users/ASUS/Documents/Programme/M2_TNSID/s9/Metaheuristique/projet/scp.txt";
+        string filename;
+        //string filename = "C:/Users/ASUS/Documents/Programme/M2_TNSID/s9/Metaheuristique/projet/data/scp41.txt";
+
+        cout << "Enter the path to the input file (e.g., scp.txt, scp510.txt): ";
+        cin >> filename;
+
         readSubsetsFromFile(filename, m, n);
+
+
 
         // Create an initial feasible solution
         vector<int> initialSolution = constructInitialFeasibleSolution(m, n);

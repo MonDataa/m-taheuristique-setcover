@@ -1,5 +1,6 @@
 #include "utils.h"
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <vector>
 #include <set>
@@ -13,7 +14,6 @@ using namespace std;
 vector<vector<int>> aij;
 vector<int> weights;
 
-// Fonction pour lire les sous-ensembles et générer aij
 void readSubsetsFromFile(const string& filename, int& m, int& n) {
     ifstream file(filename);
     if (!file.is_open()) {
@@ -21,12 +21,14 @@ void readSubsetsFromFile(const string& filename, int& m, int& n) {
         exit(EXIT_FAILURE);
     }
 
-    file >> m >> n;
+    file >> m >> n; // Lire m (univers) et n (nombre de sous-ensembles)
+    cout << "Dimensions trouvées dans le fichier : " << m << " x " << n << endl;
 
-    aij.resize(m, vector<int>(n, 0)); // Initialiser la matrice avec les dimensions lues
-    weights.resize(n);
+    // Ajustement dynamique des dimensions
+    aij.assign(m, vector<int>(n, 0));
+    weights.assign(n, 0);
 
-    set<int> invalidElements;
+    set<int> invalidElements; // Pour les éléments hors de l'univers
 
     for (int j = 0; j < n; ++j) {
         int subsetSize;
@@ -42,32 +44,25 @@ void readSubsetsFromFile(const string& filename, int& m, int& n) {
                 invalidElements.insert(element);
             }
         }
-
-        file >> weights[j];
+        file >> weights[j]; // Poids du sous-ensemble
     }
 
     file.close();
 
     if (!invalidElements.empty()) {
-        cout << "Les éléments suivants sont hors de l'univers et ont été ignorés : ";
-        for (const auto& elem : invalidElements) {
-            cout << elem << " ";
-        }
+        cout << "Éléments ignorés hors de l'univers : ";
+        for (int elem : invalidElements) cout << elem << " ";
         cout << endl;
     }
 }
 
-// Fonction pour afficher la matrice aij
 void displayMatrix(const vector<vector<int>>& matrix) {
     cout << "Affichage de la matrice aij : " << endl;
-    for (size_t i = 0; i < matrix.size(); ++i) {
-        for (size_t j = 0; j < matrix[i].size(); ++j) {
-            cout << matrix[i][j] << " ";
-        }
+    for (const auto& row : matrix) {
+        for (int val : row) cout << val << " ";
         cout << endl;
     }
-    cout << "Dimensions de la matrice : " << matrix.size() << " x "
-         << (matrix.empty() ? 0 : matrix[0].size()) << endl;
+    cout << "Dimensions : " << matrix.size() << " x " << matrix[0].size() << endl;
 }
 
 // Fonction pour construire une solution réalisable

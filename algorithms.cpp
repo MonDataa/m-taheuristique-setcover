@@ -397,139 +397,90 @@ vector<int> diversifySolution(const vector<int>& solution, int destroySize, int 
 }
 
 vector<int> tabuSearchMetaLearning(int m, int n, int maxIterations, int tabuTenure, int maxNoImprovement) {
-    // Générer une solution initiale faisable
     vector<int> solution = greedySolution(m, n);
     int bestWeight = calculateWeight(solution);
     vector<int> bestSolution = solution;
 
     int iteration = 0;
     int noImprovementCount = 0;
-    int initialTabuTenure = tabuTenure;
 
     unordered_set<int> tabuList;
     mt19937 rng((unsigned int)chrono::steady_clock::now().time_since_epoch().count());
-
-    // Seuils pour le méta-learning
-    int stagnationThreshold = maxNoImprovement / 2; // Par exemple, à mi-chemin
-    int destroySizeForDiversification = 5; // Nombre de sous-ensembles à retirer lors de la diversification
+    int stagnationThreshold = maxNoImprovement / 2;
+    int destroySizeForDiversification = 5;
 
     cout << "Début de la recherche Tabu avec méta-learning..." << endl;
-    cout << "maxIterations=" << maxIterations << ", tabuTenure=" << tabuTenure
-         << ", maxNoImprovement=" << maxNoImprovement << endl;
-
-    // Vous pouvez aussi garder un historique des améliorations ou de l'évolution du poids
-    // si vous le souhaitez, similaire au code hybridMetaLearningAndTabuv1
-    // vector<pair<int,int>> historicalData; // (iteration, bestWeight)
 
     for (iteration = 0; iteration < maxIterations; iteration++) {
-        cout << "Itération " << iteration+1 << "/" << maxIterations << endl;
+        cout << "Itération " << iteration + 1 << "/" << maxIterations << endl;
 
-        // Copie de la solution actuelle
+        // Copie sûre pour éviter les manipulations directes
         vector<int> currentSolution = solution;
-        int candidateWeight = numeric_limits<int>::max();
+        int candidateWeight = bestWeight;
         vector<int> bestCandidate = solution;
 
-        // Génération des voisins par ajout
+        // Ajout de voisinage
         for (int j = 0; j < n; ++j) {
             if (find(currentSolution.begin(), currentSolution.end(), j) == currentSolution.end()) {
                 currentSolution.push_back(j);
                 int w = calculateWeight(currentSolution);
-                bool feasible = isFeasibleSolution(currentSolution, m);
-                bool notTabuOrAspiration = (tabuList.find(j) == tabuList.end()) || (w < bestWeight);
 
-                if (feasible && notTabuOrAspiration && w < candidateWeight) {
+                if (isFeasibleSolution(currentSolution, m) && w < candidateWeight) {
                     bestCandidate = currentSolution;
                     candidateWeight = w;
                 }
 
-                currentSolution.pop_back();
+                currentSolution.pop_back(); // Restauration
             }
         }
 
-        // Génération des voisins par retrait
+        // Retrait de voisinage
         for (int subset : solution) {
-            auto it = find(currentSolution.begin(), currentSolution.end(), subset);
-            if (it != currentSolution.end()) {
-                currentSolution.erase(it);
-                int w = calculateWeight(currentSolution);
-                bool feasible = isFeasibleSolution(currentSolution, m);
-                bool notTabuOrAspiration = (tabuList.find(subset) == tabuList.end()) || (w < bestWeight);
+            auto tempSolution = currentSolution;
+            tempSolution.erase(find(tempSolution.begin(), tempSolution.end(), subset));
+            int w = calculateWeight(tempSolution);
 
-                if (feasible && notTabuOrAspiration && w < candidateWeight) {
-                    bestCandidate = currentSolution;
-                    candidateWeight = w;
-                }
-
-                // Annuler le retrait
-                currentSolution.push_back(subset);
+            if (isFeasibleSolution(tempSolution, m) && w < candidateWeight) {
+                bestCandidate = tempSolution;
+                candidateWeight = w;
             }
         }
 
-        // Vérification de l'amélioration
+        // Mise à jour si amélioration
         if (candidateWeight < bestWeight) {
             solution = bestCandidate;
             bestWeight = candidateWeight;
             bestSolution = solution;
             noImprovementCount = 0;
 
-            cout << "Amélioration trouvée à l'itération " << iteration+1 << " ! Nouveau poids : " << bestWeight << endl;
-
-            // Mise à jour de la liste Tabou
+            cout << "Amélioration trouvée ! Nouveau poids : " << bestWeight << endl;
             tabuList.clear();
-            for (int subset : solution) {
-                tabuList.insert(subset);
-                if ((int)tabuList.size() > tabuTenure) {
-                    auto first = tabuList.begin();
-                    tabuList.erase(first);
-                }
-            }
         } else {
-            // Pas d'amélioration
             noImprovementCount++;
-            if (candidateWeight < numeric_limits<int>::max()) {
-                solution = bestCandidate;
-            }
-
-            // Affichage de la stagnation
-            cout << "Pas d'amélioration à l'itération " << iteration+1 << ". Nombre d'itérations sans amélioration : " << noImprovementCount << endl;
-
-            // Diversification si stagnation
-            if (noImprovementCount == stagnationThreshold) {
-                cout << "Stagnation détectée après " << stagnationThreshold << " itérations sans amélioration. Diversification..." << endl;
-                vector<int> diversifiedSolution = diversifySolution(solution, destroySizeForDiversification, m, n, rng);
-                if (isFeasibleSolution(diversifiedSolution, m)) {
-                    int w = calculateWeight(diversifiedSolution);
-                    if (w < bestWeight) {
-                        bestWeight = w;
-                        bestSolution = diversifiedSolution;
-                        cout << "Amélioration après diversification ! Poids : " << bestWeight << endl;
-                    } else {
-                        cout << "Diversification effectuée, pas d'amélioration, mais on conserve la solution diversifiée." << endl;
-                    }
-                    solution = diversifiedSolution;
-                } else {
-                    cout << "Diversification non faisable, on conserve la solution actuelle." << endl;
-                }
-
-                // On peut ajuster la durée tabou
-                tabuTenure += 5;
-                cout << "Tabu Tenure augmenté à " << tabuTenure << endl;
-            }
-
-            // Critère d'arrêt si aucune amélioration pendant trop longtemps
-            /*if (noImprovementCount >= maxNoImprovement) {
-                cout << "Early stopping : aucune amélioration depuis " << maxNoImprovement << " itérations." << endl;
-                break;
-            }*/
         }
 
-        // Affichage de l'état à la fin de l'itération
-        cout << "Fin de l'itération " << iteration+1 << " - Meilleur poids actuel : " << bestWeight
-             << ", Itérations sans amélioration : " << noImprovementCount << endl;
+        // Diversification en cas de stagnation
+        if (noImprovementCount == stagnationThreshold) {
+            cout << "Diversification..." << endl;
+            vector<int> diversifiedSolution = diversifySolution(solution, destroySizeForDiversification, m, n, rng);
+
+            if (isFeasibleSolution(diversifiedSolution, m)) {
+                solution = diversifiedSolution;
+                cout << "Diversification réussie." << endl;
+            }
+            noImprovementCount = 0;
+        }
+
+        // Early stopping
+        if (noImprovementCount >= maxNoImprovement) {
+            cout << "Arrêt précoce après stagnation." << endl;
+            break;
+        }
+
+        cout << "Fin de l'itération " << iteration + 1 << " - Meilleur poids : " << bestWeight << endl;
     }
 
-    cout << "Fin de la recherche Tabu avec méta-learning. Nombre total d'itérations effectuées : " << iteration << endl;
-
+    cout << "Fin de l'algorithme Tabu Méta-learning. Meilleur poids : " << bestWeight << endl;
     return bestSolution;
 }
 
