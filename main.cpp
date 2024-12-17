@@ -14,7 +14,7 @@ public:
     void run() {
         int m, n;
         string filename;
-        //string filename = "C:/Users/ASUS/Documents/Programme/M2_TNSID/s9/Metaheuristique/projet/data/scp41.txt";
+        //string filename = "";
 
         cout << "Enter the path to the input file (e.g., scp.txt, scp510.txt): ";
         cin >> filename;
