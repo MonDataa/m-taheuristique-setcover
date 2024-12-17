@@ -10,6 +10,7 @@ void gridSearchTabuMetaLearning(int m, int n, const std::vector<int>& initialSol
 void gridSearchLNS(int m, int n, const std::vector<int>& initialSolution);
 void gridSearchALNS(int m, int n, const std::vector<int>& initialSolution);
 void gridSearchVNS(int m, int n, const std::vector<int>& initialSolution);
-
+void gridSearchGRASP(int m, int n);
+void gridSearchGRASP_VNS(int m, int n);
 #endif // GRID_SEARCH_H
 

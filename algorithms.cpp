@@ -377,110 +377,122 @@ vector<int> largeNeighborhoodSearch(int m, int n, const vector<int>& initialSolu
 
 // ---------------------------------Recherche Tabou Meta ++ --------------------------------------------------
 
-// Fonction pour diversification (métapprentissage)
-// Retire aléatoirement un certain nombre de sous-ensembles et reconstruit
 vector<int> diversifySolution(const vector<int>& solution, int destroySize, int m, int n, mt19937& rng) {
     vector<int> newSol = solution;
-    if ((int)newSol.size() > destroySize) {
-        // Retirer destroySize sous-ensembles aléatoirement
-        uniform_int_distribution<int> dist(0,(int)newSol.size()-1);
-        for (int i = 0; i < destroySize; ++i) {
-            if(newSol.empty()) break;
-            int idx = dist(rng);
-            newSol.erase(newSol.begin()+idx);
-        }
+    set<int> removed;
+
+    // Retirer aléatoirement destroySize sous-ensembles
+    while ((int)removed.size() < destroySize && !newSol.empty()) {
+        uniform_int_distribution<int> dist(0, (int)newSol.size() - 1);
+        int idx = dist(rng);
+        removed.insert(newSol[idx]);
+        newSol.erase(newSol.begin() + idx);
     }
 
-    // Reconstruire
+    // Reconstruire la solution
     newSol = reconstructSolution(newSol, m, n);
     return newSol;
 }
 
-vector<int> tabuSearchMetaLearning(int m, int n, int maxIterations, int tabuTenure, int maxNoImprovement) {
+vector<int> tabuSearchMetaLearning(int m, int n, int maxIterations, int initialTabuTenure, int maxNoImprovement) {
+    // Solution initiale avec l'algorithme glouton
     vector<int> solution = greedySolution(m, n);
     int bestWeight = calculateWeight(solution);
     vector<int> bestSolution = solution;
 
-    int iteration = 0;
-    int noImprovementCount = 0;
-
     unordered_set<int> tabuList;
-    mt19937 rng((unsigned int)chrono::steady_clock::now().time_since_epoch().count());
+    int tabuTenure = initialTabuTenure;
+
+    int iteration = 0, noImprovementCount = 0;
     int stagnationThreshold = maxNoImprovement / 2;
-    int destroySizeForDiversification = 5;
+    int destroySize = 5; // Taille pour la diversification
 
-    cout << "Début de la recherche Tabu avec méta-learning..." << endl;
+    mt19937 rng((unsigned int)chrono::steady_clock::now().time_since_epoch().count());
+    auto startTime = chrono::high_resolution_clock::now();
 
-    for (iteration = 0; iteration < maxIterations; iteration++) {
-        cout << "Itération " << iteration + 1 << "/" << maxIterations << endl;
+    cout << "Démarrage de Tabu Search Méta-Learning améliorée..." << endl;
 
-        // Copie sûre pour éviter les manipulations directes
-        vector<int> currentSolution = solution;
-        int candidateWeight = bestWeight;
+    for (; iteration < maxIterations; ++iteration) {
+        cout << "\nItération " << iteration + 1 << "/" << maxIterations << endl;
+
         vector<int> bestCandidate = solution;
+        int candidateWeight = numeric_limits<int>::max();
 
-        // Ajout de voisinage
+        // Exploration améliorée des voisins
         for (int j = 0; j < n; ++j) {
-            if (find(currentSolution.begin(), currentSolution.end(), j) == currentSolution.end()) {
-                currentSolution.push_back(j);
-                int w = calculateWeight(currentSolution);
+            if (find(solution.begin(), solution.end(), j) == solution.end()) {
+                vector<int> tempSolution = solution;
+                tempSolution.push_back(j);
 
-                if (isFeasibleSolution(currentSolution, m) && w < candidateWeight) {
-                    bestCandidate = currentSolution;
-                    candidateWeight = w;
+                if (isFeasibleSolution(tempSolution, m)) {
+                    int weight = calculateWeight(tempSolution);
+                    if ((tabuList.find(j) == tabuList.end() || weight < bestWeight) && weight < candidateWeight) {
+                        bestCandidate = tempSolution;
+                        candidateWeight = weight;
+                    }
                 }
-
-                currentSolution.pop_back(); // Restauration
             }
         }
 
-        // Retrait de voisinage
         for (int subset : solution) {
-            auto tempSolution = currentSolution;
-            tempSolution.erase(find(tempSolution.begin(), tempSolution.end(), subset));
-            int w = calculateWeight(tempSolution);
+            vector<int> tempSolution = solution;
+            tempSolution.erase(remove(tempSolution.begin(), tempSolution.end(), subset), tempSolution.end());
 
-            if (isFeasibleSolution(tempSolution, m) && w < candidateWeight) {
-                bestCandidate = tempSolution;
-                candidateWeight = w;
+            if (isFeasibleSolution(tempSolution, m)) {
+                int weight = calculateWeight(tempSolution);
+                if ((tabuList.find(subset) == tabuList.end() || weight < bestWeight) && weight < candidateWeight) {
+                    bestCandidate = tempSolution;
+                    candidateWeight = weight;
+                }
             }
         }
 
-        // Mise à jour si amélioration
+        // Mise à jour des solutions et Tabu Tenure
         if (candidateWeight < bestWeight) {
             solution = bestCandidate;
             bestWeight = candidateWeight;
             bestSolution = solution;
             noImprovementCount = 0;
-
+            tabuTenure = max(5, tabuTenure - 1); // Réduire légèrement la durée tabou
             cout << "Amélioration trouvée ! Nouveau poids : " << bestWeight << endl;
-            tabuList.clear();
         } else {
             noImprovementCount++;
+            tabuTenure = min(20, tabuTenure + 1); // Augmenter légèrement en cas de stagnation
+            cout << "Aucune amélioration. Tabu Tenure ajustée à : " << tabuTenure << endl;
         }
+
+        // Mettre à jour la liste Tabou
+        tabuList.insert(candidateWeight);
+        if (tabuList.size() > tabuTenure) tabuList.erase(tabuList.begin());
 
         // Diversification en cas de stagnation
         if (noImprovementCount == stagnationThreshold) {
-            cout << "Diversification..." << endl;
-            vector<int> diversifiedSolution = diversifySolution(solution, destroySizeForDiversification, m, n, rng);
+            cout << "Stagnation détectée. Diversification..." << endl;
+            vector<int> diversifiedSolution = diversifySolution(solution, destroySize, m, n, rng);
 
             if (isFeasibleSolution(diversifiedSolution, m)) {
                 solution = diversifiedSolution;
-                cout << "Diversification réussie." << endl;
+                noImprovementCount = 0;
+                cout << "Diversification réussie !" << endl;
+            } else {
+                cout << "Diversification échouée. Solution inchangée." << endl;
             }
-            noImprovementCount = 0;
         }
 
-        // Early stopping
+        // Arrêt anticipé si aucune amélioration sur une longue période
         if (noImprovementCount >= maxNoImprovement) {
-            cout << "Arrêt précoce après stagnation." << endl;
+            cout << "Arrêt précoce : aucune amélioration depuis " << maxNoImprovement << " itérations." << endl;
             break;
         }
 
-        cout << "Fin de l'itération " << iteration + 1 << " - Meilleur poids : " << bestWeight << endl;
+        cout << "Fin de l'itération " << iteration + 1 << ", Meilleur poids actuel : " << bestWeight << endl;
     }
 
-    cout << "Fin de l'algorithme Tabu Méta-learning. Meilleur poids : " << bestWeight << endl;
+    auto endTime = chrono::high_resolution_clock::now();
+    chrono::duration<double> elapsed = endTime - startTime;
+    cout << "Fin de la recherche Tabu Méta-Learning améliorée en " << elapsed.count() << " secondes." << endl;
+    cout << "Meilleur poids obtenu : " << bestWeight << endl;
+
     return bestSolution;
 }
 
@@ -792,5 +804,178 @@ vector<int> vnsSearchCustom(int m, int n, const vector<int>& initialSolution, in
     }
 
     cout << "Fin du VNS après " << iteration << " itérations. Meilleur poids=" << bestWeight << "." << endl;
+    return bestSolution;
+}
+
+//--------------------------------------------Grasp-------------------------------------------
+// **Phase de construction de GRASP** : construction gloutonne avec randomisation
+vector<int> graspConstruct(int m, int n, double alpha) {
+    vector<int> solution;
+    set<int> uncovered; // Ensemble des éléments non encore couverts
+    for (int i = 0; i < m; ++i) uncovered.insert(i);
+
+    while (!uncovered.empty()) {
+        vector<pair<int, double>> candidateList;
+
+        for (int j = 0; j < n; ++j) {
+            int coverCount = 0;
+            for (int i : uncovered) {
+                if (aij[i][j] == 1) coverCount++;
+            }
+            if (coverCount > 0) {
+                double cost = static_cast<double>(weights[j]) / coverCount; // Score glouton
+                candidateList.push_back({j, cost});
+            }
+        }
+
+        // Trier par coût croissant
+        sort(candidateList.begin(), candidateList.end(), [](auto& a, auto& b) {
+            return a.second < b.second;
+        });
+
+        if (candidateList.empty()) {
+            cerr << "Erreur : Impossible de couvrir tous les éléments." << endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // Sélection aléatoire parmi les meilleurs candidats (alpha définit la randomisation)
+        int limit = max(1, static_cast<int>(alpha * candidateList.size()));
+        random_device rd;
+        mt19937 rng(rd());
+        uniform_int_distribution<int> dist(0, limit - 1);
+
+        int selectedSubset = candidateList[dist(rng)].first;
+        solution.push_back(selectedSubset);
+
+        // Mettre à jour les éléments couverts
+        for (auto it = uncovered.begin(); it != uncovered.end();) {
+            if (aij[*it][selectedSubset] == 1) it = uncovered.erase(it);
+            else ++it;
+        }
+    }
+
+    return solution;
+}
+
+// **Recherche locale** : améliore une solution en essayant des ajouts/retraits de sous-ensembles
+vector<int> localSearch(const vector<int>& initialSolution, int m, int n) {
+    vector<int> solution = initialSolution;
+    bool improved = true;
+
+    while (improved) {
+        improved = false;
+
+        for (int j = 0; j < n; ++j) {
+            if (find(solution.begin(), solution.end(), j) == solution.end()) {
+                vector<int> newSolution = solution;
+                newSolution.push_back(j);
+
+                if (isFeasibleSolution(newSolution, m) && calculateWeight(newSolution) < calculateWeight(solution)) {
+                    solution = newSolution;
+                    improved = true;
+                    break;
+                }
+            }
+        }
+
+        for (auto it = solution.begin(); it != solution.end();) {
+            int removedSubset = *it;
+            vector<int> newSolution = solution;
+            newSolution.erase(remove(newSolution.begin(), newSolution.end(), removedSubset), newSolution.end());
+
+            if (isFeasibleSolution(newSolution, m) && calculateWeight(newSolution) < calculateWeight(solution)) {
+                solution = newSolution;
+                improved = true;
+                break;
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    return solution;
+}
+
+// **GRASP principal** : combinaison de la construction et de la recherche locale
+vector<int> GRASP(int m, int n, int maxIterations, double alpha) {
+    vector<int> bestSolution;
+    int bestWeight = numeric_limits<int>::max();
+
+    for (int iter = 0; iter < maxIterations; ++iter) {
+        cout << "Itération " << iter + 1 << "/" << maxIterations << endl;
+
+        // Phase de construction
+        vector<int> constructedSolution = graspConstruct(m, n, alpha);
+
+        // Phase de recherche locale
+        vector<int> improvedSolution = localSearch(constructedSolution, m, n);
+
+        int currentWeight = calculateWeight(improvedSolution);
+        if (currentWeight < bestWeight) {
+            bestWeight = currentWeight;
+            bestSolution = improvedSolution;
+            cout << "Nouvelle solution trouvée avec poids = " << bestWeight << endl;
+        }
+    }
+
+    return bestSolution;
+}
+
+// -----------------------------VNS + Grasp--------------------------------------
+
+vector<int> hybridVNSWithGRASP(int m, int n, int maxIterations, int kMax, int localSearchAttempts, int graspIterations, double alpha) {
+    cout << "Démarrage du VNS Hybride avec GRASP..." << endl;
+
+    // Étape 1 : Utiliser GRASP pour générer une solution initiale
+    vector<int> bestSolution = GRASP(m, n, graspIterations, alpha);
+    int bestWeight = calculateWeight(bestSolution);
+
+    cout << "Solution initiale trouvée par GRASP, Poids : " << bestWeight << endl;
+
+    int iteration = 0;
+    mt19937 rng((unsigned int)chrono::steady_clock::now().time_since_epoch().count());
+
+    while (iteration < maxIterations) {
+        int k = 1;
+
+        // Solution courante pour l'itération en cours
+        vector<int> currentSolution = bestSolution;
+        bool improvementFound = false;
+
+        while (k <= kMax) {
+            cout << "Itération " << iteration + 1 << "/" << maxIterations << ", Voisinage k=" << k << endl;
+
+            // Étape 2 : "Shaking" pour explorer un voisinage
+            vector<int> shakenSolution = shakingVNS(currentSolution, k, m, n);
+
+            // Étape 3 : Recherche locale sur la solution secouée
+            vector<int> improvedSolution = localSearchVNS(shakenSolution, m, n, localSearchAttempts);
+
+            // Évaluation de la solution améliorée
+            int currentWeight = calculateWeight(improvedSolution);
+            if (isFeasibleSolution(improvedSolution, m) && currentWeight < bestWeight) {
+                bestSolution = improvedSolution;
+                bestWeight = currentWeight;
+                cout << "Amélioration trouvée ! Nouveau poids : " << bestWeight << endl;
+
+                // Revenir au premier voisinage après amélioration
+                k = 1;
+                improvementFound = true;
+                currentSolution = bestSolution;
+                continue; // Recommencer avec k=1
+            }
+
+            k++; // Passer au prochain voisinage si pas d'amélioration
+        }
+
+        if (!improvementFound) {
+            cout << "Pas d'amélioration à l'itération " << iteration + 1 << "." << endl;
+        }
+
+        iteration++;
+    }
+
+    cout << "Fin du VNS Hybride avec GRASP après " << iteration << " itérations." << endl;
+    cout << "Meilleur poids trouvé : " << bestWeight << endl;
     return bestSolution;
 }

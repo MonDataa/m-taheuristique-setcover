@@ -4,6 +4,7 @@
 #include <vector>
 #include <limits>
 #include <string>
+#include <chrono>
 
 using namespace std;
 
@@ -223,4 +224,109 @@ void gridSearchVNS(int m, int n, const vector<int>& initialSolution) {
         cout << "Aucune solution faisable n'a été trouvée." << endl;
     }
 }
+
+void gridSearchGRASP(int m, int n) {
+    vector<double> alphaValues = {0.1, 0.3, 0.5, 0.7, 0.9}; // Différents niveaux de randomisation
+    vector<int> iterationsValues = {50, 100, 200};           // Nombre d'itérations GRASP
+
+    int bestWeight = numeric_limits<int>::max();
+    vector<int> bestSolution;
+    double bestAlpha = 0.0;
+    int bestIterations = 0;
+
+    cout << "Démarrage de Grid Search pour GRASP..." << endl;
+
+    for (double alpha : alphaValues) {
+        for (int maxIterations : iterationsValues) {
+            cout << "Test avec alpha=" << alpha << ", maxIterations=" << maxIterations << endl;
+
+            auto start = chrono::high_resolution_clock::now();
+            vector<int> solution = GRASP(m, n, maxIterations, alpha);
+            auto end = chrono::high_resolution_clock::now();
+            int weight = calculateWeight(solution);
+            chrono::duration<double> duration = end - start;
+
+            cout << "Poids obtenu : " << weight << ", Temps : " << duration.count() << "s" << endl;
+
+            if (weight < bestWeight) {
+                bestWeight = weight;
+                bestSolution = solution;
+                bestAlpha = alpha;
+                bestIterations = maxIterations;
+            }
+        }
+    }
+
+    cout << "Meilleur résultat trouvé : " << endl;
+    cout << "Alpha = " << bestAlpha << ", maxIterations = " << bestIterations << ", Poids = " << bestWeight << endl;
+    cout << "Solution : ";
+    for (int s : bestSolution) cout << s << " ";
+    cout << endl;
+}
+
+
+void gridSearchGRASP_VNS(int m, int n) {
+    vector<double> alphaValues = {0.1, 0.3, 0.5, 0.7};          // Niveau de randomisation
+    vector<int> graspIterationsValues = {50, 100, 200};         // Nombre d'itérations pour GRASP
+    vector<int> vnsIterationsValues = {100, 200, 500};          // Nombre d'itérations pour VNS
+    vector<int> kMaxValues = {2, 3, 5};                         // Taille maximale des voisinages
+    vector<int> localSearchAttemptsValues = {10, 20, 50};       // Nombre d'essais pour la recherche locale
+
+    int bestWeight = numeric_limits<int>::max();
+    vector<int> bestSolution;
+    double bestAlpha = 0.0;
+    int bestGraspIterations = 0;
+    int bestVnsIterations = 0;
+    int bestKMax = 0;
+    int bestLocalSearchAttempts = 0;
+
+    cout << "Démarrage de Grid Search pour GRASP+VNS..." << endl;
+
+    for (double alpha : alphaValues) {
+        for (int graspIterations : graspIterationsValues) {
+            for (int vnsIterations : vnsIterationsValues) {
+                for (int kMax : kMaxValues) {
+                    for (int localSearchAttempts : localSearchAttemptsValues) {
+                        cout << "Test avec alpha=" << alpha
+                             << ", graspIterations=" << graspIterations
+                             << ", vnsIterations=" << vnsIterations
+                             << ", kMax=" << kMax
+                             << ", localSearchAttempts=" << localSearchAttempts << endl;
+
+                        auto start = chrono::high_resolution_clock::now();
+                        vector<int> solution = hybridVNSWithGRASP(m, n, vnsIterations, kMax, localSearchAttempts, graspIterations, alpha);
+                        auto end = chrono::high_resolution_clock::now();
+                        int weight = calculateWeight(solution);
+                        chrono::duration<double> duration = end - start;
+
+                        cout << "Poids obtenu : " << weight << ", Temps : " << duration.count() << "s" << endl;
+
+                        if (weight < bestWeight) {
+                            bestWeight = weight;
+                            bestSolution = solution;
+                            bestAlpha = alpha;
+                            bestGraspIterations = graspIterations;
+                            bestVnsIterations = vnsIterations;
+                            bestKMax = kMax;
+                            bestLocalSearchAttempts = localSearchAttempts;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    cout << "Meilleur résultat trouvé : " << endl;
+    cout << "Alpha = " << bestAlpha
+         << ", graspIterations = " << bestGraspIterations
+         << ", vnsIterations = " << bestVnsIterations
+         << ", kMax = " << bestKMax
+         << ", localSearchAttempts = " << bestLocalSearchAttempts
+         << ", Poids = " << bestWeight << endl;
+    cout << "Solution : ";
+    for (int s : bestSolution) cout << s << " ";
+    cout << endl;
+}
+
+
 

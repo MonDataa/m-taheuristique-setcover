@@ -48,7 +48,7 @@ public:
             displayMenu();
             int choice = getChoice();
 
-            if (choice == 6) {
+            if (choice == 8) {
                 cout << "Exiting the program." << endl;
                 break;
             }
@@ -97,7 +97,9 @@ private:
         cout << "3 = Adaptive Large Neighborhood Search (ALNS)" << endl;
         cout << "4 = Variable Neighborhood Search (VNS)" << endl;
         cout << "5 = Greedy Algorithm" << endl;
-        cout << "6 = Exit" << endl;
+        cout << "6 = Grasp Algorithm" << endl;
+        cout << "7 = Grasp + VNS" << endl;
+        cout << "8 = Exit" << endl;
         cout << "Enter your choice: ";
     }
 
@@ -139,6 +141,14 @@ private:
             case 5:
                 cerr << "Grid Search for Greedy not implemented." << endl;
                 break;
+            case 6:
+                cerr << "Grid Search for Grasp not implemented." << endl;
+                gridSearchGRASP(m, n);
+                break;
+            case 7:
+                cerr << "Grid Search for Grasp+VNS not implemented." << endl;
+                gridSearchGRASP_VNS(m, n);
+                break;
             default:
                 cerr << "Invalid choice. Please try again." << endl;
                 break;
@@ -174,6 +184,14 @@ private:
             case 5:
                 cout << "Running Greedy Algorithm..." << endl;
                 solution = greedySolution(m, n);
+                break;
+            case 6:
+                cout << "Running Grasp Algorithm..." << endl;
+                solution = GRASP(m, n, maxIterations, alpha);
+                break;
+            case 7:
+                cout << "Running Hybrid VNS with GRASP..." << endl;
+                solution = hybridVNSWithGRASP(m, n, maxIterations, 3, 50, 10, alpha); // kMax=3, localSearchAttempts=50, graspIterations=10
                 break;
             default:
                 cerr << "Invalid choice. Please try again." << endl;

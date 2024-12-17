@@ -46,4 +46,13 @@ vector<int> localSearchVNS(const vector<int>& solution, int m, int n, int localS
 vector<int> shakingVNS(const vector<int>& solution, int k, int m, int n);
 vector<int> vnsSearchCustom(int m, int n, const vector<int>& initialSolution, int maxIterations, int kMax, int localSearchAttempts);
 
+//Grasp
+vector<int> graspConstruct(int m, int n, double alpha);
+vector<int> localSearch(const vector<int>& initialSolution, int m, int n);
+vector<int> GRASP(int m, int n, int maxIterations, double alpha);
+
+//Grasp+VNS
+vector<int> hybridVNSWithGRASP(int m, int n, int maxIterations, int kMax, int localSearchAttempts, int graspIterations, double alpha);
+
+
 #endif // ALGORITHMS_H
