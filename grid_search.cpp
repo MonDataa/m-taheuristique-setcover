@@ -328,5 +328,60 @@ void gridSearchGRASP_VNS(int m, int n) {
     cout << endl;
 }
 
+// Fonction pour exécuter Grid Search sur le modèle VNS avec Meta-Learning
+void gridSearchVNSMetaLearning(int m, int n, const vector<int>& initialSolution) {
+    // Plages de valeurs pour chaque paramètre
+    vector<int> maxIterationsValues = {500, 1000};
+    vector<int> kMaxValues = {3, 5, 7};
+    vector<int> localSearchAttemptsValues = {10, 20, 50};
+    vector<double> alphaValues = {0.05, 0.1, 0.2};
+
+    vector<int> bestSolution;
+    int bestWeight = numeric_limits<int>::max();
+
+    cout << "===== Début du Grid Search pour VNS avec Meta-Learning =====" << endl;
+
+    // Boucles imbriquées pour tester toutes les combinaisons de paramètres
+    for (int maxIterations : maxIterationsValues) {
+        for (int kMax : kMaxValues) {
+            for (int localSearchAttempts : localSearchAttemptsValues) {
+                for (double alpha : alphaValues) {
+                    cout << "\n[Test] maxIterations=" << maxIterations
+                         << ", kMax=" << kMax
+                         << ", localSearchAttempts=" << localSearchAttempts
+                         << ", alpha=" << alpha << endl;
+
+                    auto start = chrono::high_resolution_clock::now();
+                    vector<int> solution = vnsSearchMetaLearning(m, n, initialSolution, maxIterations, kMax, localSearchAttempts);
+                    auto end = chrono::high_resolution_clock::now();
+                    chrono::duration<double> elapsed = end - start;
+
+                    int weight = calculateWeight(solution);
+
+                    // Affichage des résultats pour cette combinaison
+                    cout << "  Poids obtenu : " << weight
+                         << ", Temps d'exécution : " << elapsed.count() << " secondes" << endl;
+
+                    // Mise à jour de la meilleure solution
+                    if (weight < bestWeight) {
+                        bestWeight = weight;
+                        bestSolution = solution;
+                        cout << "  ** Nouvelle meilleure solution trouvée **" << endl;
+                    }
+                }
+            }
+        }
+    }
+
+    // Résultats finaux
+    cout << "\n===== Fin du Grid Search =====" << endl;
+    cout << "Meilleur poids trouvé : " << bestWeight << endl;
+    cout << "Solution : ";
+    for (int s : bestSolution) {
+        cout << s << " ";
+    }
+    cout << endl;
+}
+
 
 

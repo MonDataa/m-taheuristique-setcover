@@ -48,7 +48,7 @@ public:
             displayMenu();
             int choice = getChoice();
 
-            if (choice == 8) {
+            if (choice == 9) {
                 cout << "Exiting the program." << endl;
                 break;
             }
@@ -99,7 +99,8 @@ private:
         cout << "5 = Greedy Algorithm" << endl;
         cout << "6 = Grasp Algorithm" << endl;
         cout << "7 = Grasp + VNS" << endl;
-        cout << "8 = Exit" << endl;
+        cout << "8 = VNS with Meta-learning" << endl;
+        cout << "9 = Exit" << endl;
         cout << "Enter your choice: ";
     }
 
@@ -149,6 +150,10 @@ private:
                 cerr << "Grid Search for Grasp+VNS not implemented." << endl;
                 gridSearchGRASP_VNS(m, n);
                 break;
+            case 8:
+                cerr << "Grid Search for Meta+VNS not implemented." << endl;
+                gridSearchVNSMetaLearning(m, n, initialSolution);
+                break;
             default:
                 cerr << "Invalid choice. Please try again." << endl;
                 break;
@@ -192,6 +197,10 @@ private:
             case 7:
                 cout << "Running Hybrid VNS with GRASP..." << endl;
                 solution = hybridVNSWithGRASP(m, n, maxIterations, 3, 50, 10, alpha); // kMax=3, localSearchAttempts=50, graspIterations=10
+                break;
+            case 8:
+                cout << "Running Hybrid VNS with Meta..." << endl;
+                solution = vnsSearchMetaLearning(m, n, initialSolution, maxIterations, 5, 50);
                 break;
             default:
                 cerr << "Invalid choice. Please try again." << endl;

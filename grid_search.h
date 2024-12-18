@@ -12,5 +12,7 @@ void gridSearchALNS(int m, int n, const std::vector<int>& initialSolution);
 void gridSearchVNS(int m, int n, const std::vector<int>& initialSolution);
 void gridSearchGRASP(int m, int n);
 void gridSearchGRASP_VNS(int m, int n);
+void gridSearchVNSMetaLearning(int m, int n, const std::vector<int>& initialSolution);
+
 #endif // GRID_SEARCH_H
 

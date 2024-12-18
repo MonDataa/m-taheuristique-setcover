@@ -979,3 +979,94 @@ vector<int> hybridVNSWithGRASP(int m, int n, int maxIterations, int kMax, int lo
     cout << "Meilleur poids trouvé : " << bestWeight << endl;
     return bestSolution;
 }
+
+//---------------------------------------VNS & Meta learning----------------------------
+
+
+vector<int> vnsSearchMetaLearning(int m, int n, const vector<int>& initialSolution, int maxIterations, int kMax, int localSearchAttempts) {
+    vector<int> bestSolution = initialSolution;
+    int bestWeight = calculateWeight(bestSolution);
+
+    mt19937 rng((unsigned int)chrono::steady_clock::now().time_since_epoch().count());
+    vector<double> neighborhoodScores(kMax + 1, 1.0); // Initialisation des scores pour chaque voisinage
+    double alpha = 0.1; // Taux d'apprentissage pour la mise à jour des scores
+
+    int iteration = 0;
+
+    cout << "===== DÉMARRAGE DU VNS AVEC MÉTA-LEARNING =====" << endl;
+    cout << "Paramètres : maxIterations=" << maxIterations
+         << ", kMax=" << kMax
+         << ", localSearchAttempts=" << localSearchAttempts << endl;
+
+    while (iteration < maxIterations) {
+        cout << "\n--- Itération " << iteration + 1 << "/" << maxIterations << " ---" << endl;
+
+        int k = 1;
+        bool improvementFound = false;
+        vector<int> currentSolution = bestSolution;
+
+        while (k <= kMax) {
+            cout << "  [Voisinage k=" << k << "] Sélection des scores..." << endl;
+
+            // Sélection du voisinage basé sur les scores (roulette wheel selection)
+            vector<double> cumulativeScores(kMax + 1, 0.0);
+            for (int i = 1; i <= kMax; i++) {
+                cumulativeScores[i] = cumulativeScores[i - 1] + neighborhoodScores[i];
+            }
+            double r = uniform_real_distribution<double>(0.0, cumulativeScores[kMax])(rng);
+            for (int i = 1; i <= kMax; i++) {
+                if (r <= cumulativeScores[i]) {
+                    k = i;
+                    break;
+                }
+            }
+            cout << "    Voisinage sélectionné : k = " << k << " (score actuel = " << neighborhoodScores[k] << ")" << endl;
+
+            // Appliquer le shaking
+            cout << "    Application du shaking..." << endl;
+            vector<int> shakenSolution = shakingVNS(currentSolution, k, m, n);
+            cout << "    Taille de la solution secouée : " << shakenSolution.size() << endl;
+
+            // Appliquer la recherche locale
+            cout << "    Recherche locale en cours..." << endl;
+            vector<int> improvedSolution = localSearchVNS(shakenSolution, m, n, localSearchAttempts);
+            int w = calculateWeight(improvedSolution);
+
+            // Vérification de la faisabilité et amélioration
+            if (isFeasibleSolution(improvedSolution, m)) {
+                cout << "    Solution faisable obtenue avec poids = " << w << endl;
+                if (w < bestWeight) {
+                    cout << "    ** Amélioration trouvée ! ** Nouveau meilleur poids = " << w << endl;
+                    bestSolution = improvedSolution;
+                    bestWeight = w;
+                    neighborhoodScores[k] += alpha; // Récompenser le voisinage k
+                    improvementFound = true;
+                    currentSolution = bestSolution;
+                    cout << "    Mise à jour du score pour k=" << k << " (nouveau score = " << neighborhoodScores[k] << ")" << endl;
+                    break; // Revenir au premier voisinage
+                } else {
+                    neighborhoodScores[k] *= (1 - alpha); // Pénaliser légèrement si pas d'amélioration
+                    cout << "    Aucune amélioration. Score du voisinage k=" << k << " réduit à " << neighborhoodScores[k] << endl;
+                }
+            } else {
+                cout << "    Solution non faisable. Passage au prochain voisinage." << endl;
+            }
+
+            k++;
+        }
+
+        if (!improvementFound) {
+            cout << "  -> Aucune amélioration trouvée à cette itération." << endl;
+        } else {
+            cout << "  -> Solution améliorée, poids actuel = " << bestWeight << endl;
+        }
+
+        iteration++;
+    }
+
+    cout << "\n===== FIN DU VNS AVEC MÉTA-LEARNING =====" << endl;
+    cout << "Meilleur poids trouvé = " << bestWeight << endl;
+    cout << "Taille de la meilleure solution : " << bestSolution.size() << " sous-ensembles" << endl;
+
+    return bestSolution;
+}
