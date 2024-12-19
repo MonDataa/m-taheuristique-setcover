@@ -17,7 +17,7 @@
 using namespace std;
 
 
-// Vérifie si une solution est faisable et affiche des informations détaillées
+// Vérifie si une solution est faisable
 bool isFeasibleSolution(const vector<int>& solution, int m) {
     vector<bool> covered(m, false);
     int totalWeight = 0;
@@ -35,11 +35,8 @@ bool isFeasibleSolution(const vector<int>& solution, int m) {
     for (int i = 0; i < m; ++i) {
         if (!covered[i]) {
             feasible = false;
-            // Suppression du cout "Non couvert: ..." si vous ne souhaitez pas afficher
         }
     }
-
-    // Supprimer ce cout << endl; ici
     //cout << endl; // plus besoin, ça ajoutait une ligne vide
 
     return feasible;
@@ -315,7 +312,7 @@ vector<int> largeNeighborhoodSearch(int m, int n, const vector<int>& initialSolu
     cout << "maxIterations=" << maxIterations << ", destroySize=" << destroySize << endl;
 
     int noImprovementCount = 0;
-    int maxNoImprovement = 50; // Par exemple, un critère de stagnation pour LNS
+    int maxNoImprovement = 50; // critère de stagnation pour LNS
 
     for (int iter = 0; iter < maxIterations; ++iter) {
         cout << "Itération " << iter+1 << "/" << maxIterations << endl;
@@ -730,12 +727,11 @@ vector<int> localSearchVNS(const vector<int>& solution, int m, int n, int localS
 
 
 vector<int> shakingVNS(const vector<int>& solution, int k, int m, int n) {
-    // Exemple de "shaking" :
     // On modifie la solution en retirant et ajoutant k sous-ensembles aléatoirement.
     vector<int> shaken = solution;
     mt19937 rng((unsigned int)chrono::steady_clock::now().time_since_epoch().count());
 
-    // Retirer k sous-ensembles aléatoirement (si possible)
+    // Retirer k sous-ensembles aléatoirement
     for (int i = 0; i < k && !shaken.empty(); i++) {
         uniform_int_distribution<int> dist(0, (int)shaken.size()-1);
         int idx = dist(rng);
@@ -751,7 +747,7 @@ vector<int> shakingVNS(const vector<int>& solution, int k, int m, int n) {
         }
     }
 
-    // Reconstruction (si nécessaire) pour s'assurer que la solution est faisable
+    // Reconstruction  pour s'assurer que la solution est faisable
     shaken = reconstructSolution(shaken, m, n);
 
     return shaken;
@@ -778,7 +774,7 @@ vector<int> vnsSearchCustom(int m, int n, const vector<int>& initialSolution, in
             // Shaking
             vector<int> shakenSolution = shakingVNS(currentSolution, k, m, n);
 
-            // Local Search avec nombre d'essais spécifié
+            // Local Search avec nombre d'essais
             vector<int> improvedSolution = localSearchVNS(shakenSolution, m, n, localSearchAttempts);
 
             if (isFeasibleSolution(improvedSolution, m)) {
@@ -811,7 +807,7 @@ vector<int> vnsSearchCustom(int m, int n, const vector<int>& initialSolution, in
 // **Phase de construction de GRASP** : construction gloutonne avec randomisation
 vector<int> graspConstruct(int m, int n, double alpha) {
     vector<int> solution;
-    set<int> uncovered; // Ensemble des éléments non encore couverts
+    set<int> uncovered;
     for (int i = 0; i < m; ++i) uncovered.insert(i);
 
     while (!uncovered.empty()) {
@@ -926,7 +922,7 @@ vector<int> GRASP(int m, int n, int maxIterations, double alpha) {
 vector<int> hybridVNSWithGRASP(int m, int n, int maxIterations, int kMax, int localSearchAttempts, int graspIterations, double alpha) {
     cout << "Démarrage du VNS Hybride avec GRASP..." << endl;
 
-    // Étape 1 : Utiliser GRASP pour générer une solution initiale
+    // E1 : Utilisation de GRASP pour générer une solution initiale
     vector<int> bestSolution = GRASP(m, n, graspIterations, alpha);
     int bestWeight = calculateWeight(bestSolution);
 
@@ -945,10 +941,10 @@ vector<int> hybridVNSWithGRASP(int m, int n, int maxIterations, int kMax, int lo
         while (k <= kMax) {
             cout << "Itération " << iteration + 1 << "/" << maxIterations << ", Voisinage k=" << k << endl;
 
-            // Étape 2 : "Shaking" pour explorer un voisinage
+            // E2 : "Shaking" pour explorer un voisinage
             vector<int> shakenSolution = shakingVNS(currentSolution, k, m, n);
 
-            // Étape 3 : Recherche locale sur la solution secouée
+            // E3 : Recherche locale sur la solution secouée
             vector<int> improvedSolution = localSearchVNS(shakenSolution, m, n, localSearchAttempts);
 
             // Évaluation de la solution améliorée

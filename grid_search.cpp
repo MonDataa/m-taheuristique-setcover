@@ -9,7 +9,6 @@
 using namespace std;
 
 
-// Exemple de fonction pour lancer un grid search sur Tabu simple
 void gridSearchTabuSimple(int m, int n, const vector<int>& initialSolution) {
     // Grilles de valeurs à tester
     vector<int> iterationsGrid = {500, 1000, 2000};
@@ -47,14 +46,13 @@ void gridSearchTabuSimple(int m, int n, const vector<int>& initialSolution) {
          << ", Poids=" << bestWeight << endl;
 }
 
-// Exemple de fonction pour lancer un grid search sur Tabu méta-learning
 void gridSearchTabuMetaLearning(int m, int n, const vector<int>& initialSolution) {
     // Grilles de valeurs à tester
     vector<int> iterationsGrid = {500, 1000, 2000};
     vector<int> tabuTenureGrid = {5, 10, 20};
     vector<int> maxNoImprovementGrid = {20, 50, 100};
 
-    // Paramètres méta-learning additionnels (exemple)
+    // Paramètres méta-learning additionnels
     vector<int> diversificationFrequencyGrid = {10, 25, 50};
     vector<int> perturbationSizeGrid = {3, 5, 10};
 
@@ -137,7 +135,6 @@ void gridSearchLNS(int m, int n, const vector<int>& initialSolution) {
 }
 
 void gridSearchALNS(int m, int n, const vector<int>& initialSolution) {
-    // Listes de valeurs à tester
     vector<int> maxIterationsList = {500, 1000};
     vector<int> destroySizeList = {5, 10};
     vector<double> alphaList = {0.5, 1.0, 2.0};
@@ -183,7 +180,6 @@ void gridSearchALNS(int m, int n, const vector<int>& initialSolution) {
 }
 
 void gridSearchVNS(int m, int n, const vector<int>& initialSolution) {
-    // Listes de valeurs à tester
     vector<int> maxIterationsList = {500, 1000};
     vector<int> kMaxList = {2, 3, 5};
     vector<int> localSearchAttemptsList = {10, 50};
@@ -373,7 +369,6 @@ void gridSearchVNSMetaLearning(int m, int n, const vector<int>& initialSolution)
         }
     }
 
-    // Résultats finaux
     cout << "\n===== Fin du Grid Search =====" << endl;
     cout << "Meilleur poids trouvé : " << bestWeight << endl;
     cout << "Solution : ";

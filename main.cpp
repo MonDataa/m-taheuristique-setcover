@@ -21,8 +21,6 @@ public:
 
         readSubsetsFromFile(filename, m, n);
 
-
-
         // Create an initial feasible solution
         vector<int> initialSolution = constructInitialFeasibleSolution(m, n);
         if (initialSolution.empty()) {
@@ -30,7 +28,6 @@ public:
             return;
         }
 
-        // Display the results for the initial solution
         cout << "=== Initial Solution ===" << endl;
         displayResults(initialSolution, m);
         cout << "=========================" << endl;

@@ -53,7 +53,7 @@ vector<int> GRASP(int m, int n, int maxIterations, double alpha);
 
 //Grasp+VNS
 vector<int> hybridVNSWithGRASP(int m, int n, int maxIterations, int kMax, int localSearchAttempts, int graspIterations, double alpha);
-
+//VNS avec méta-learning
 vector<int> vnsSearchMetaLearning(int m, int n, const vector<int>& initialSolution, int maxIterations, int kMax, int localSearchAttempts);
 
 #endif // ALGORITHMS_H
